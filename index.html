@@ -145,3 +145,50 @@
 </script>
 </body>
 </html>
+// Функция запуска секретной сцены с Rinia Dedoldia
+function startSecretScene() {
+    // 1. Отдаляем камеру для обзора со стороны (Third Person)
+    camera.position.set(5, 2, 5);
+    camera.lookAt(rinia.position);
+
+    // 2. Создаем "умную цензуру" (черный пиксельный квадрат)
+    const censor = document.createElement('div');
+    censor.style.cssText = `
+        position: fixed;
+        width: 100px;
+        height: 100px;
+        background: black;
+        box-shadow: 0 0 15px 5px black;
+        z-index: 10000;
+        display: none;
+        pointer-events: none;
+        filter: blur(5px);
+    `;
+    document.body.appendChild(censor);
+
+    // 3. Запуск цикла анимации (20 раз)
+    let count = 0;
+    const sceneInterval = setInterval(() => {
+        // Движение вперед-назад
+        camera.position.z += (count % 2 === 0) ? 0.2 : -0.2;
+        
+        // Включаем цензуру только в месте контакта
+        censor.style.display = 'block';
+        const vector = rinia.position.clone();
+        vector.y += 0.5; // Смещаем цензуру в область "контакта"
+        vector.project(camera);
+        
+        censor.style.left = (vector.x * .5 + .5) * window.innerWidth - 50 + 'px';
+        censor.style.top = (vector.y * -.5 + .5) * window.innerHeight - 50 + 'px';
+
+        count++;
+
+        if (count >= 40) { // 20 полных циклов (туда-сюда)
+            clearInterval(sceneInterval);
+            censor.remove();
+            camera.position.set(0, 1.7, 5); // Возвращаем камеру в норму
+            alert("Сцена завершена! Rinia Dedoldia в ауте 😂");
+        }
+    }, 150);
+}
+
