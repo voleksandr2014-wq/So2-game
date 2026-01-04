@@ -3,154 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Standoff 2: Ultimate Web Edition</title>
+    <title>SO2 Web Build</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b141a; font-family: 'Arial', sans-serif; color: white; user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b141a; font-family: sans-serif; color: white; }
         
-        /* Экраны меню */
-        .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; background: rgba(0,0,0,0.85); }
-        .team-card { width: 280px; padding: 25px; margin: 15px; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; border: 2px solid rgba(255,255,255,0.1); transition: 0.3s; }
-        .t-card { background: linear-gradient(45deg, #d35400, #e67e22); }
-        .ct-card { background: linear-gradient(45deg, #2980b9, #3498db); }
-        .team-card:hover { transform: scale(1.05); border-color: #fff; }
+        /* Таблица счета (TAB) */
+        #scoreboard { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
+        .score-row { display: flex; justify-content: space-between; width: 80%; padding: 10px; border-bottom: 1px solid #444; }
 
-        /* Игровой HUD */
+        /* HUD */
         #hud { display: none; position: fixed; inset: 0; z-index: 100; pointer-events: none; }
-        .top-stats { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 25px; border-radius: 4px; display: flex; gap: 30px; font-size: 20px; border: 1px solid #444; }
-        .money-tag { position: absolute; top: 110px; left: 20px; color: #2ecc71; font-size: 26px; font-weight: bold; text-shadow: 2px 2px #000; }
-        .radar { position: absolute; top: 15px; left: 15px; width: 90px; height: 90px; border-radius: 50%; border: 2px solid #fff; background: rgba(0,0,0,0.3); }
-
-        /* Кнопки */
-        .btn-game { position: absolute; background: rgba(255,255,255,0.1); border: 1px solid #fff; border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center; }
-        .shoot-btn { bottom: 50px; right: 50px; width: 100px; height: 100px; font-size: 40px; }
-        .shop-btn { top: 160px; left: 20px; width: 50px; height: 50px; border-radius: 5px; font-weight: bold; }
-
-        #shop-menu { display: none; background: rgba(0,0,0,0.9); }
+        .money { position: absolute; top: 110px; left: 20px; color: #2ecc71; font-size: 24px; font-weight: bold; }
+        .top-stats { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 20px; border: 1px solid #555; display: flex; gap: 20px; pointer-events: auto; }
+        
+        /* Команды */
+        .overlay { position: fixed; inset: 0; background: #0b141a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1500; }
+        .btn { padding: 20px; margin: 10px; width: 250px; border: none; font-weight: bold; cursor: pointer; color: white; }
     </style>
 </head>
 <body>
 
-<div id="team-select" class="overlay">
-    <h1 style="letter-spacing: 5px;">ВЫБОР КОМАНДЫ</h1>
-    <div class="team-card t-card" onclick="joinTeam('T')">ТЕРРОРИСТЫ<br><span id="t-count">0 / 5</span></div>
-    <div class="team-card ct-card" onclick="joinTeam('CT')">СПЕЦНАЗ<br><span id="ct-count">0 / 5</span></div>
+<div id="scoreboard">
+    <h2>STANDOFF 2 - SCOREBOARD</h2>
+    <div class="score-row" style="color: #3498db;"><span>CT TEAM</span> <span>5 Плеерс</span></div>
+    <div class="score-row" style="color: #e67e22;"><span>T TEAM</span> <span>5 Плеерс</span></div>
+    <p>Нажми еще раз на счет, чтобы закрыть</p>
 </div>
 
-<div id="shop-menu" class="overlay">
-    <h2>МАГАЗИН СНАРЯЖЕНИЯ</h2>
-    <div class="team-card" style="background: #27ae60;" onclick="buy('AKR', 2700)">AKR - $2700</div>
-    <div class="team-card" style="background: #27ae60;" onclick="buy('M4', 2900)">M4 - $2900</div>
-    <div class="team-card" style="background: #c0392b;" onclick="toggleShop()">ЗАКРЫТЬ</div>
+<div id="team-select" class="overlay">
+    <h1>ВЫБОР СТОРОНЫ</h1>
+    <button class="btn" style="background: #e67e22;" onclick="selectTeam('T')">ТЕРРОРИСТЫ (Бандана)</button>
+    <button class="btn" style="background: #3498db;" onclick="selectTeam('CT')">СПЕЦНАЗ (Кепка)</button>
 </div>
 
 <div id="hud">
-    <div class="top-stats">
-        <span id="score-ct" style="color: #3498db;">0</span>
-        <span id="game-timer" style="color: #f1c40f;">02:00</span>
-        <span id="score-t" style="color: #e67e22;">0</span>
+    <div class="top-stats" onclick="toggleScore()">
+        <span style="color: #3498db;">0</span> <span>02:00</span> <span style="color: #e67e22;">0</span>
     </div>
-    <div class="radar"></div>
-    <div class="money-tag" id="cash-val">$1000</div>
-    <div class="btn-game shop-btn" onclick="toggleShop()">B</div>
-    <div class="btn-game shoot-btn" onclick="doShoot()">🔥</div>
+    <div class="money" id="m-val">$1000</div>
+    <div style="position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid #fff; pointer-events: auto; display: flex; align-items: center; justify-content: center;" onclick="fire()">🔥</div>
 </div>
 
 <script>
-    let currentCash = 1000;
-    let myTeam = "";
-    let teams = { T: 2, CT: 3 }; // Фейковые боты для баланса
-
-    // THREE.JS SETUP
+    let cash = 1000;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xd2b48c); // Sandstone
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
 
-    function joinTeam(side) {
-        // Имбовый автобаланс
-        if (side === 'T' && teams.T >= 5) return alert("Команда T полна!");
-        if (side === 'CT' && teams.CT >= 5) return alert("Команда CT полна!");
-        
-        myTeam = side;
+    function selectTeam(t) {
         document.getElementById('team-select').style.display = 'none';
         document.getElementById('hud').style.display = 'block';
         document.body.appendChild(renderer.domElement);
-        initWorld();
-        animate();
+        initGame();
+        loop();
     }
 
-    function initWorld() {
-        // Пол
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color: 0xbc9b6a}));
-        floor.rotation.x = -Math.PI/2; scene.add(floor);
-        
-        // Свет
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        const sun = new THREE.DirectionalLight(0xffffff, 1); sun.position.set(10, 20, 10); scene.add(sun);
-
-        // Оружие (Пистолет)
-        const gun = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 0.3), new THREE.MeshStandardMaterial({color: 0x222}));
-        body.position.set(0.3, -0.2, -0.5);
-        gun.add(body);
-        camera.add(gun);
-        scene.add(camera);
-        camera.position.set(0, 1.7, 5);
-
-        // Спавн ботов
-        for(let i=0; i<8; i++) spawnBot(Math.random()*20-10, -10 - (i*5), i % 2 == 0 ? 'T' : 'CT');
-    }
-
-    function spawnBot(x, z, side) {
-        const bot = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1, 0.3), new THREE.MeshStandardMaterial({color: side === 'CT' ? 0x2980b9 : 0x5d4037}));
-        if (side === 'CT') {
-            const vest = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.7, 0.35), new THREE.MeshStandardMaterial({color: 0x111})); // SWAT
-            const cap = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.3), new THREE.MeshStandardMaterial({color: 0x2c3e50})); // Кепка
-            vest.position.y = 1.1; cap.position.set(0, 1.85, 0.1);
-            bot.add(vest, cap);
-        } else {
-            const bandana = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.4), new THREE.MeshStandardMaterial({color: 0xbc9b6a})); // Бандана
-            bandana.position.y = 1.75;
-            bot.add(bandana);
-        }
-        body.position.y = 1; bot.add(body);
-        bot.position.set(x, 0, z);
-        scene.add(bot);
-    }
-
-    function doShoot() {
-        // Отдача (Имбовая фишка)
-        camera.rotation.x += 0.05;
-        setTimeout(() => camera.rotation.x -= 0.05, 50);
-        
-        // Рандомный килл и награда
-        if(Math.random() > 0.7) {
-            currentCash += 300;
-            document.getElementById('cash-val').innerText = "$" + currentCash;
-        }
-    }
-
-    function toggleShop() {
-        const s = document.getElementById('shop-menu');
+    function toggleScore() {
+        const s = document.getElementById('scoreboard');
         s.style.display = s.style.display === 'flex' ? 'none' : 'flex';
     }
 
-    function buy(item, price) {
-        if(currentCash >= price) {
-            currentCash -= price;
-            document.getElementById('cash-val').innerText = "$" + currentCash;
-            alert("Куплено: " + item);
-            toggleShop();
-        } else alert("Мало денег!");
+    function initGame() {
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color: 0xbc9b6a}));
+        floor.rotation.x = -Math.PI/2; scene.add(floor);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        camera.position.set(0, 1.7, 5);
+
+        // Спавним Спецназ
+        for(let i=0; i<5; i++) {
+            const bot = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1, 0.3), new THREE.MeshStandardMaterial({color: 0x2980b9}));
+            const cap = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.3), new THREE.MeshStandardMaterial({color: 0x222}));
+            body.position.y = 1; cap.position.set(0, 1.85, 0.1);
+            bot.add(body, cap);
+            bot.position.set(Math.random()*10-5, 0, -10);
+            scene.add(bot);
+        }
     }
 
-    function animate() {
-        requestAnimationFrame(animate);
+    function fire() {
+        cash += 300;
+        document.getElementById('m-val').innerText = "$" + cash;
+        camera.position.y += 0.05; // Эффект отдачи
+        setTimeout(() => camera.position.y -= 0.05, 50);
+    }
+
+    function loop() {
+        requestAnimationFrame(loop);
         renderer.render(scene, camera);
     }
+
+    window.onresize = () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+    };
+    renderer.setSize(window.innerWidth, window.innerHeight);
 </script>
 </body>
 </html>
