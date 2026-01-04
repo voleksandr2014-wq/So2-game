@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SO2: LEGEND MULTIPLAYER</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root { --bg: #0d141b; --gold: #f1c40f; --blue: #3498db; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: white; font-family: sans-serif; overflow: hidden; }
+
+        /* Лобби как на скриншоте */
+        #lobby { position: fixed; inset: 0; background: radial-gradient(circle, #1c2d3d 0%, #0d141b 100%); z-index: 10; display: flex; flex-direction: column; }
+        
+        .top-nav { display: flex; background: rgba(0,0,0,0.5); height: 50px; align-items: center; padding: 0 20px; border-bottom: 1px solid #2c3e50; }
+        .balance { position: absolute; right: 20px; display: flex; gap: 10px; }
+        .money-box { background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 4px; border-right: 3px solid #7f8c8d; font-size: 14px; }
+        .money-box.gold { border-right-color: var(--gold); }
+
+        .main-content { display: flex; flex: 1; padding: 20px; }
+        .friends-col { width: 300px; background: rgba(0,0,0,0.3); border-radius: 5px; overflow-y: auto; }
+        .friend-item { display: flex; gap: 10px; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+        .friend-avatar { width: 45px; height: 45px; background: #2c3e50; border-radius: 4px; }
+        
+        .center-slots { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .slot { width: 80px; height: 80px; background: rgba(255,255,255,0.05); border: 1px solid #34495e; margin: 5px; }
+        
+        .right-panel { width: 250px; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 20px; }
+        .btn-play { background: #fff; color: #000; padding: 15px; text-align: center; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="lobby">
+    <div class="top-nav">
+        <div style="font-weight: bold; font-size: 18px;">В ЛОББИ</div>
+        <div class="balance">
+            <div class="money-box">163 C</div>
+            <div class="money-box gold" id="g-display">0.60 G</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="friends-col">
+            <div style="padding: 10px; color: #7f8c8d;">ДРУЗЬЯ 0 / 31</div>
+            <div class="friend-item" onclick="invite('Dedoldia')">
+                <div class="friend-avatar" style="border: 1px solid var(--gold);"></div>
+                <div><div style="font-size:10px; color:#7f8c8d;">ID 250281514</div><b>Dedoldia (Rinia)</b><br><span style="color:#e74c3c; font-size:10px;">В сети</span></div>
+            </div>
+        </div>
+
+        <div class="center-slots">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr);">
+                <div class="slot" style="background: rgba(52, 152, 219, 0.2); border-color: var(--blue);"></div>
+                <div class="slot"></div><div class="slot"></div>
+            </div>
+            <p id="status-text">Подключен к лобби...</p>
+            <input type="text" id="promo" placeholder="ng2026" style="padding:10px; background:#1c2d3d; border:1px solid var(--blue); color:white; border-radius:5px;">
+        </div>
+
+        <div class="right-panel">
+            <div style="background: rgba(0,0,0,0.6); padding: 10px; margin-bottom: 10px; text-align: center;">
+                <div style="font-size: 10px; color: #7f8c8d;">Регион: Польша</div>
+                <div style="font-weight: bold;">ПРЯТКИ SANDSTONE NG</div>
+            </div>
+            <div class="btn-play" onclick="start3D()">В БОЙ</div>
+        </div>
+    </div>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+    let gold = 0.60;
+    let luck = 0.05;
+
+    function invite(name) {
+        alert("Инвайт отправлен игроку " + name);
+        document.getElementById('status-text').innerText = "Ожидание " + name + "...";
+    }
+
+    function start3D() {
+        const p = document.getElementById('promo').value;
+        if(p === 'ng2026') {
+            luck = 0.70; // Твоя секретная удача!
+            gold += 350;
+            document.getElementById('g-display').innerText = gold.toFixed(2) + " G";
+        }
+        
+        document.getElementById('lobby').style.display = 'none';
+        const canvas = document.getElementById('game');
+        canvas.style.display = 'block';
+        initThree(canvas);
+    }
+
+    function initThree(canvas) {
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1c2d3d);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({canvas});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const light = new THREE.AmbientLight(0xffffff, 1); scene.add(light);
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color: 0xbc9b6a}));
+        ground.rotation.x = -Math.PI/2; scene.add(ground);
+
+        // Твой персонаж-БОТ
+        const bot = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial({color: 0x3498db}));
+        bot.position.y = 1; scene.add(bot);
+        camera.position.set(0, 5, 10); camera.lookAt(bot.position);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+        alert("Вы вошли как БОТ-АДМИН. Охота на Дедолдию началась!");
+    }
+</script>
+</body>
+</html>
